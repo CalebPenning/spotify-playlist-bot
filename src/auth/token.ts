@@ -8,7 +8,7 @@ const authToken = Buffer.from(`${clientId}:${clientSecret}`, "utf-8").toString(
 	"base64"
 )
 
-async function getToken() {
+export async function getToken() {
 	const url = "https://accounts.spotify.com/api/token"
 	try {
 		const res = await axios.post(url, "grant_type=client_credentials", {
