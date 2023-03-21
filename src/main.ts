@@ -4,57 +4,56 @@ import dotenv from "dotenv"
 import { getToken } from "./auth/token"
 
 dotenv.config()
-const playlistId = process.env.SPOTIFY_PLAYLIST_ID
-const apiUrl = process.env.SPOTIFY_API_BASE_URL
+const playlistId = process.env.SPOTIFY_PLAYLIST_ID as string
+const apiUrl = process.env.SPOTIFY_API_BASE_URL as string
 
 let token = ""
 
 async function addSongToPlaylist(message: string) {
 	// TODO: implement this function
-	let res
-	if (!token) res = await getToken()
-	token = res.access_token
 	const split = message.split("/")
-	let songLink
-	const songLinkIdx = split.indexOf("open.spotify.com")
-	if (songLinkIdx === -1) return
+	const trackId = split.at(-1)
+
+	if (!trackId) return
 	else {
-		songLink = split[songLinkIdx]
-		console.log("songlink var ", songLink)
-		const trackId = songLink.split("/").at(-1)
-		console.log("trackid var ", trackId)
-		const trackInfo = await axios.get(`${apiUrl}/tracks/${trackId}`, {
-			headers: {
-				Authorization: `Bearer ${token}`,
-				"Content-Type": "application/json",
-			},
-		})
-		console.log("trackinfo var ", trackInfo)
-		const uri = trackInfo.data.uri
-		console.log("uri var ", uri)
+		const trackInfo = await getTrackInfo(apiUrl, trackId, token)
+		const { uri } = trackInfo
+
 		if (!uri) {
 			console.error(
 				"Track uri not fetched successully. Debug logic in function addSongToPlaylist lines 18-32"
 			)
 			return
 		}
-		const isAdded = await axios.post(
-			`${apiUrl}/playlists/${playlistId}/tracks`,
-			{
-				uris: [uri],
-			},
-			{
-				headers: {
-					Authorization: `Bearer ${token}`,
-					"Content-Type": "application/json",
-				},
-			}
-		)
-		console.log(isAdded)
+		// const isAdded = await axios.post(
+		// 	`${apiUrl}/playlists/${playlistId}/tracks`,
+		// 	{
+		// 		uris: [uri],
+		// 	},
+		// 	{
+		// 		headers: {
+		// 			Authorization: `Bearer ${token}`,
+		// 			"Content-Type": "application/json",
+		// 		},
+		// 	}
+		// )
+		// console.log(isAdded.data)
 	}
 }
 
-async function getTrackInfo() {}
+async function getTrackInfo(
+	apiUrl: string,
+	trackId: string,
+	bearerToken: string
+) {
+	const trackInfoResponse = await axios.get(`${apiUrl}/tracks/${trackId}`, {
+		headers: {
+			Authorization: `Bearer ${bearerToken}`,
+			"Content-Type": "application/json",
+		},
+	})
+	return trackInfoResponse.data
+}
 
 function isSpotifyLink(url: string): Boolean {
 	if (url.includes("open.spotify.com")) return true
@@ -67,13 +66,16 @@ const runProgram = async () => {
 		`https://open.spotify.com/track/4LjuYGFZJrLSYFrjoAm6P1?si=45f00c99434140c3`
 	)
 
-	console.log("RESULTS OF TRYING TO ADD SONG TO PLAYLIST >>>>>>>>>>", results)
+	// console.log("RESULTS OF TRYING TO ADD SONG TO PLAYLIST >>>>>>>>>>", results)
 }
 
 const initProgram = async () => {
-	const resp = await getToken()
-	if (resp.access_token) token = resp.access_token
-	else return
+	const { access_token } = await getToken()
+	if (access_token) token = access_token
+	else {
+		console.log("no token retrieved")
+		process.exit(1)
+	}
 }
 
 ;(async () => {

@@ -17,6 +17,7 @@ export async function getToken() {
 				"Content-Type": "application/x-www-form-urlencoded",
 			},
 		})
+		console.log(res.data.access_token)
 		return res.data
 	} catch (err) {
 		console.error({ error: err })
